@@ -34,7 +34,10 @@
  *
  These are the options that are currently supported:
  ** debug ~ whether to write to console.log, or not.
-
+ ** resize_registered ~ 0 INTERNAL flag
+ ** menuTop, DEFAULT 170 ~ INTERNAL, will be removed soon
+ ** tabs ~ DEFAULT [] ~ INTERNAL used for the tabs
+ ** prevCols, DEFAULT 0 ~ INTERNAL, used to detect change on numbers of columns
  */
 (function ($) {
     "use strict";
