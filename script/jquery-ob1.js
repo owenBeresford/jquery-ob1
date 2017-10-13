@@ -116,10 +116,11 @@
             // as I am polling this without making an object, I need to access the "prototype" fn
             if (typeof jQuery.fn.biblio !== 'function') {
                 console.log("jQuery + plugins isn't loaded (check order of injection).");
-                return;
+                return this;
             }
             if (typeof biblio_loader == 'function') {
                 biblio_loader();
+				return this;
 
             } else {
                 let id = '.lotsOfWords';
@@ -173,6 +174,7 @@
 
                 }
             }
+			return this;
         };
 
         /**
@@ -190,10 +192,10 @@
             let $tt = $('.lotsOfWords');
 // only apply when asked to, and have enough content
             if ($tt.length === 0 || $tt.text().length < 500) {
-                return;
+                return this;
             }
             if (!$tt.columnize) {
-                return;
+                return this;
             }
 
 // hopefully phones changing orientation won't break things...
@@ -229,7 +231,20 @@
                 }
                 this.options.prevCols = colno;
             }
+			return this;
         };
+	
+        CorrectionModule.prototype.burgerMenu = function (id) {
+			// add pullin code
+			let t=$(id);
+			if( !t.attr('data-state') ) {
+				t.addClass('burgerMenuOpen').attr('data-state', 1);
+				$('#pageMenu i').removeClass('fa-bars').addClass('fa-remove')
+			} else {
+				t.removeClass('burgerMenuOpen').attr('data-state', null);
+				$('#pageMenu i').removeClass('fa-remove').addClass('fa-bars')
+			}
+		}
 
         /**
          *    CorrectionModule.prototype.alignHeader
@@ -268,6 +283,7 @@
                 });
                 this.options.resize_registered = 1;
             }
+			return this;
         };
 
         /**
@@ -305,6 +321,7 @@
                 $('#block' + id).attr('style', 'display:none');
                 $($item).click(this.tabChange);
             });
+			return this;
         };
 
         /**

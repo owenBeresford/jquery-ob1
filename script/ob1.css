@@ -13,9 +13,12 @@ h1, .h1 { font-size:2.3rem; }
 .h4_menu.column { flex: 1 1 0px; }
 .h4_title.column { flex: 4 1 0px; }
 #bigScreen.row { max-width:96%;}
-.burgerMenuOpen { display:block; z-index:2; position:absolute; top:100px; right:100px; }
+#pageMenu { margin-right:-1.2rem; }
+.burgerMenu { display:none; background-color:white; padding:1rem; list-style:none; }
+.burgerMenuOpen { display:block; z-index:2; position:absolute; top:60px; right:69px; border:#aaa solid 1px; }
 i.fa { font-size:130%; vertical-align:center; }
-
+i.fa-remove { background-color:white; padding:3px; padding-left:7px; padding-bottom:7px; z-index:1; border:#aaa solid 1px; border-bottom:0px; border-left:0px;  }
+.button { padding:0.65em 1em; }
 .wholeArticle { display: -webkit-box; -webkit-flex-direction: column; display: -moz-box; -moz-flex-direction: column; display: -ms-flexbox; -ms-flex-direction: column; display: -webkit-flex; display: flex; flex-direction: column; }
 .articleHeader { -webkit-box-ordinal-group: 1; -moz-box-ordinal-group: 1; -ms-flex-order: 0; -webkit-order: 0; order: 0; }
 .articleContent { -webkit-box-ordinal-group: 2; -moz-box-ordinal-group: 2; -ms-flex-order: 1; -webkit-order: 1; order: 1; }
