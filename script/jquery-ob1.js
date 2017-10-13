@@ -122,7 +122,7 @@
                 biblio_loader();
 
             } else {
-                var id = '.lotsOfWords';
+                let id = '.lotsOfWords';
                 if ($(id + " sup a").length === 0) {
                     id = '.halferWords';
                 }
@@ -131,7 +131,7 @@
                         console.log("Have quite a few references, will extract for mobile.");
                     }
 
-                    var url = window.location.href;
+                    let url = window.location.href;
                     if (url.indexOf('?') > 0) {
                         url = url.substring(0, url.indexOf('?'));
                     }
@@ -186,8 +186,8 @@
          * @return void
          */
         CorrectionModule.prototype.columnise = function () {
-            var $t1 = window.currentSize();
-            var $tt = $('.lotsOfWords');
+            let $t1 = window.currentSize();
+            let $tt = $('.lotsOfWords');
 // only apply when asked to, and have enough content
             if ($tt.length === 0 || $tt.text().length < 500) {
                 return;
@@ -198,7 +198,7 @@
 
 // hopefully phones changing orientation won't break things...
 // can double buffer to reduce flicker, if so append target:"#showhere" 
-            var colno = 1;
+            let colno = 1;
             if ($t1[0] > 1600) {
 // overhead display only....
                 colno = 4;
@@ -221,11 +221,11 @@
                     $tt.renumberByJS('ol', colno, null, 'column');
                 }
                 if (jQuery.fn.wresize) {
-                    var $t = $('.h4_page').wresize({debug: this.options.debug});
-                    $t.wait(function (
-                    this.columnise();
-                ))
-                    ;
+					let myself=this;
+                    let $t = $('.h4_page').wresize({debug: this.options.debug});
+                    $t.wait(function() {
+                    myself.columnise();
+                });
                 }
                 this.options.prevCols = colno;
             }
@@ -240,14 +240,14 @@
          * @return void
          */
         CorrectionModule.prototype.alignHeader = function () {
-            var t1 = $('.outer_menu').css('height');
-            var t2 = $('.outer_menu').css('margin-bottom');
-            var t3 = $('.outer_menu').css('margin');
+            let t1 = $('.outer_menu').css('height');
+            let t2 = $('.outer_menu').css('margin-bottom');
+            let t3 = $('.outer_menu').css('margin');
             t1 = parseInt(t1, 10);
             t2 = t2 ? parseInt(t2, 10) : parseInt(t3, 10);
 // 	var $offset	= 30 + t1 + t2; // // with the current build, the larger figure  seems too large
-            var offset = t1 + t2;
-            var t4 = $('.after_menu').offset().top;
+            let offset = t1 + t2;
+            let t4 = $('.after_menu').offset().top;
             if (this.options.debug) {
                 console.log("Combined height of menu is " + offset + " the top of the content is " + t4);
             }
@@ -262,8 +262,9 @@
 
 
             if (!this.options.resize_registered) {
+				let myself=this;
                 $(window).resize(function () {
-                    this.alignHeader();
+                    myself.alignHeader();
                 });
                 this.options.resize_registered = 1;
             }
@@ -315,7 +316,7 @@
          * @return void
          */
         CorrectionModule.prototype.tabChange = function ($e) {
-            for (var i = 0; i < this.options.tabs.sections.length; i++) {
+            for (let i = 0; i < this.options.tabs.sections.length; i++) {
                 $('#' + this.options.tabs.sections[i]).attr('style', 'display:none');
             }
             for (i = 0; i < this.options.tabs.sum.length; i++) {
@@ -327,7 +328,7 @@
                     $(item).attr('class', '');
                 });
 
-            var tt = '';
+            let tt = '';
             if (typeof $e == 'object') {
                 tt = $e.currentTarget.id;
                 tt = tt.substring(5);
@@ -375,9 +376,9 @@
      * @return void
      */
     window.currentSize = function () {
-        var d = document, root = d.documentElement, body = d.body;
-        var wid = window.innerWidth || root.clientWidth || body.clientWidth;
-        var hi = window.innerHeight || root.clientHeight || body.clientHeight;
+        let d = document, root = d.documentElement, body = d.body;
+        let wid = window.innerWidth || root.clientWidth || body.clientWidth;
+        let hi = window.innerHeight || root.clientHeight || body.clientHeight;
         wid = parseInt(wid, 10);
         hi = parseInt(hi, 10);
         return [wid, hi];
@@ -398,7 +399,7 @@
     if (!Date.prototype.toISOString) {
         ( function () {
             function pad(number) {
-                var r = String(number);
+                let r = String(number);
                 if (r.length === 1) {
                     r = '0' + r;
                 }
@@ -432,11 +433,11 @@
      * @return a Date
      */
     Date.prototype.importDate = function (format, day, time) {
-        var day1, time1, fpos, bpos;
-        var year1, month1, _day1, hour1, min1, sec1;
+        let day1, time1, fpos, bpos;
+        let year1, month1, _day1, hour1, min1, sec1;
 
-        var tt = day.split('T');
-        var found = false;
+        let tt = day.split('T');
+        let found = false;
 
         if (tt.length == 2) {
             day1 = tt[0];
