@@ -1,0 +1,8 @@
+{
+  "name": "jquery-ob1",
+  "version": "0.1.0",
+  "homepage": "https://github.com/owenBeresford/jquery-ob1",
+  "description": "Plugin for features on my site, low likelyhood of reuse",
+  "main": "jquery-ob1.js",
+  "license": "Affero GPL"
+}
