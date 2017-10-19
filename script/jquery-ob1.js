@@ -303,19 +303,19 @@
             } else {
                 this.options.tabs.holder = 'tabList';
             }
-
             let $row = $('.' + this.options.tabs.holder + ' li');
+
             this.options.tabs.sections = [];
             this.options.tabs.sum = [];
-
+			let myself=this;
 
             let globalCounter = 0;
             $row.each(function ($index, $item) {
                 let id = $($item).attr('id');
                 id = id.replace(/^click/, '');
 
-                this.options.tabs.sections[globalCounter] = 'block' + id;
-                this.options.tabs.sum[globalCounter] = 'summary' + id;
+                myself.options.tabs.sections[globalCounter] = 'block' + id;
+                myself.options.tabs.sum[globalCounter] = 'summary' + id;
                 globalCounter++;
                 $('#summary' + id).attr('style', 'display:none;');
                 $('#block' + id).attr('style', 'display:none');
@@ -336,7 +336,7 @@
             for (let i = 0; i < this.options.tabs.sections.length; i++) {
                 $('#' + this.options.tabs.sections[i]).attr('style', 'display:none');
             }
-            for (i = 0; i < this.options.tabs.sum.length; i++) {
+            for (let i = 0; i < this.options.tabs.sum.length; i++) {
                 $('#' + this.options.tabs.sum[i]).attr('style', 'display:none');
                 $('#' + this.options.tabs.sum[i]).attr('class', '');
             }
@@ -360,6 +360,7 @@
             $('#summary' + tt).attr('class', 'summaryActive');
             $('#summary' + tt).attr('style', '');
             $('#block' + tt).attr('style', 'display:inline');
+			return this;
         };
 
 
@@ -371,7 +372,7 @@
         debug: 0,
         resize_registered: 0,
         menuTop: 170,
-        tabs: [],
+        tabs: {},
         prevCols: 0,
     };
 
