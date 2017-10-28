@@ -140,6 +140,7 @@
                         url = url.substring(0, url.indexOf('#'));
                     }
                     url += "-references";
+					let self=this;
 
                     $.ajax({
                         type: 'HEAD',
@@ -147,26 +148,26 @@
                         url: url,
                         timeout: 1000,
                         success: function (data, textStatus, jqXHR) {
-                            if (this.options.debug) {
+                            if (self.options.debug) {
                                 console.log("Have references cache, applying it.");
                             }
                             $('document').biblio({
                                 tocEdit: 1,
                                 width: 500,
-                                debug: this.options.debug,
-                                loosingElement: $id,
+                                debug: self.options.debug,
+                                loosingElement: id,
                                 extendViaDownload: 4,
                                 referencesCache: url
                             });
                         },
                         error: function (jqXHR, textStatus, errorThrown) {
-                            if (this.options.debug) {
+                            if (self.options.debug) {
                                 console.log("Doing a manual download.");
                             }
                             $('document').biblio({
                                 tocEdit: 1,
-                                debug: this.options.debug,
-                                loosingElement: $id,
+                                debug: self.options.debug,
+                                loosingElement: id,
                                 extendViaDownload: 2
                             });
                         }
