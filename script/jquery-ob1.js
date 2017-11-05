@@ -123,6 +123,9 @@
 				return this;
 
             } else {
+				if(parseInt($('body').width()) > this.options.mobileWidth) {
+					return this;
+				}
                 let id = '.lotsOfWords';
                 if ($(id + " sup a").length === 0) {
                     id = '.halferWords';
@@ -374,6 +377,7 @@
         resize_registered: 0,
         menuTop: 170,
         tabs: {},
+        mobileWidth: 700,
         prevCols: 0,
     };
 
