@@ -156,7 +156,7 @@
                             }
                             $('document').biblio({
                                 tocEdit: 1,
-                                width: 500,
+                                width: self.options.mobileWidth,
                                 debug: self.options.debug,
                                 loosingElement: id,
                                 extendViaDownload: 4,
@@ -193,6 +193,13 @@
          */
         CorrectionModule.prototype.columnise = function () {
             let $t1 = window.currentSize();
+			if(typeof isMobile !== 'function') {
+				var isMobile=function() {
+					try{ document.createEvent("TouchEvent"); return true; }
+					catch(e){ return false; }
+				};
+			}
+ 
             let $tt = $('.lotsOfWords');
 // only apply when asked to, and have enough content
             if ($tt.length === 0 || $tt.text().length < 500) {
@@ -213,6 +220,10 @@
             } else if ($t1[0] > 650) {
                 colno = 2;
             }
+			if(isMobile()) {
+				colno=1;
+			}
+
             if (this.options.debug) {
                 console.log("Text split into " + colno + " columns.");
             }
