@@ -187,7 +187,6 @@
 
          * http://stackoverflow.com/questions/14328795/redefine-number-of-columns-depending-on-min-screen-resolutions-with-columnizer
          * http://welcome.totheinter.net/columnizer-jquery-plugin/
-         * @param    CorrectionModule.prototype.
          * @access public
          * @return void
          */
@@ -212,8 +211,9 @@
 // hopefully phones changing orientation won't break things...
 // can double buffer to reduce flicker, if so append target:"#showhere" 
             let colno = 1;
-            if ($t1[0] > 1600) {
-// overhead display only....
+   	    if ($t1[0] > 2000) {
+	        colno = 5;
+	    } else if ($t1[0] > 1600) {
                 colno = 4;
             } else if ($t1[0] > 1200) {
                 colno = 3;
@@ -238,17 +238,25 @@
                     $tt.renumberByJS('ol', colno, null, 'column');
                 }
                 if (jQuery.fn.wresize) {
-					let myself=this;
-                    let $t = $('.h4_page').wresize({debug: this.options.debug});
+		    let myself=this;
+                    let $t = $('.h4_page').wresize({debug: myself.options.debug});
                     $t.wait(function() {
                     myself.columnise();
                 });
                 }
                 this.options.prevCols = colno;
             }
-			return this;
+	    return this;
         };
-	
+	    
+        /**
+         * burgerMenu
+         * display/ hide this
+
+         * @param id ~ the id of the menu element to open
+         * @access public
+         * @return void
+         */
         CorrectionModule.prototype.burgerMenu = function (id) {
 			// add pullin code
 			let t=$(id);
@@ -262,7 +270,7 @@
 		}
 
         /**
-         *    CorrectionModule.prototype.alignHeader
+         * alignHeader
          * Function to call on page load, to reflow the content (actual content is first in file)
          * this function is necessary as technically the header is the last thing in the document, so search engines get page content, rather than a similar header all the time.
 
