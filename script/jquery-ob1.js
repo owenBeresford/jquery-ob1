@@ -70,12 +70,12 @@
                     linkTo: '//owenberesford.me.uk/resource/jQuery-reading-duration'
                 });
             }
-
+/*
             if ($(window).width() < 600) {
                 this.closed_size = 20;
                 $('.after_menu').css('margin-top', this.options.menuTop + 'px');
             }
-
+*/
 
             if (this.options.debug) {
                 console.log("correction() Created module.");
@@ -123,9 +123,6 @@
 				return this;
 
             } else {
-				if(parseInt($('body').width()) > this.options.mobileWidth) {
-					return this;
-				}
                 let id = '.lotsOfWords';
                 if ($(id + " sup a").length === 0) {
                     id = '.halferWords';
@@ -160,7 +157,8 @@
                                 debug: self.options.debug,
                                 loosingElement: id,
                                 extendViaDownload: 4,
-                                referencesCache: url
+                                referencesCache: url,
+								tooltip:1
                             });
                         },
                         error: function (jqXHR, textStatus, errorThrown) {
@@ -187,6 +185,7 @@
 
          * http://stackoverflow.com/questions/14328795/redefine-number-of-columns-depending-on-min-screen-resolutions-with-columnizer
          * http://welcome.totheinter.net/columnizer-jquery-plugin/
+         * @param    CorrectionModule.prototype.
          * @access public
          * @return void
          */
@@ -198,7 +197,7 @@
 					catch(e){ return false; }
 				};
 			}
- 
+
             let $tt = $('.lotsOfWords');
 // only apply when asked to, and have enough content
             if ($tt.length === 0 || $tt.text().length < 500) {
