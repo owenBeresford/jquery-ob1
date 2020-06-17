@@ -266,7 +266,25 @@
 				t.removeClass('burgerMenuOpen').attr('data-state', null);
 				$('#pageMenu i').removeClass('fa-remove').addClass('fa-bars')
 			}
-		}
+		};
+
+        /**
+         * addOctoCats
+         * Convert links labelled 'git' to the github logo
+
+         * @param id ~ HTML element id for the menu
+         * @access public
+         * @return void
+         */ 
+		CorrectionModule.prototype.addOctoCats = function () {
+			$('article a').each(function(i, a) {
+				if($(a).text().trim().toLowerCase() === 'git') {
+					$(a).html('<i class="fa fa-github" aria-hidden="true"></i>');
+				}
+			});
+			return this;
+		};
+
 
         /**
          * alignHeader
