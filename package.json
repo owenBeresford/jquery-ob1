@@ -1,0 +1,25 @@
+{
+  "name": "file building scripts",
+  "description": "Config to be able to run build scripts in build-scripts sub-dir",
+  "version": "1.0.0",
+  "main": "https://owenberesford.me.uk/resource/home",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "test harder"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:owenBeresford/jquery-ob1.git"
+  },
+  "keywords": [ ],
+  "author": "oab1",
+  "license": "ISC",
+  "dependencies": {
+    "html-entity-decoder": "^1.0.1",
+    "node-fetch": "^3.2.7",
+    "node-html-parser": "^5.3.3"
+  }
+}
