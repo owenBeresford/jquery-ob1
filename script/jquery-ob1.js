@@ -62,7 +62,7 @@
             if (this.extractGET('dbg')) {
                 this.options.debug = 1;
             }
-            if ($.fn.readingDuration && location.pathname != '/resource/home') {
+            if ($.fn.readingDuration && location.pathname !== '/resource/home' && $('.reading').length<2 ) {
                 $('.h4_page').readingDuration({
                     dataLocation: "#main",
                     target: ".addReading",
@@ -70,12 +70,9 @@
                     linkTo: '//owenberesford.me.uk/resource/jQuery-reading-duration'
                 });
             }
-/*
-            if ($(window).width() < 600) {
-                this.closed_size = 20;
-                $('.after_menu').css('margin-top', this.options.menuTop + 'px');
-            }
-*/
+			if(!COOKIE) {
+                console.warn("Cookie wrapper module isn't included in this build, why?.");
+			}
 
             if (this.options.debug) {
                 console.log("correction() Created module.");
@@ -116,7 +113,7 @@
             // as I am polling this without making an object, I need to access the "prototype" fn
             if (typeof jQuery.fn.biblio !== 'function') {
                 console.log("jQuery + plugins isn't loaded (check order of injection).");
-                return this;
+                 return this;
             }
             if (typeof biblio_loader == 'function') {
                 biblio_loader();
@@ -126,6 +123,9 @@
                 let id = '.lotsOfWords';
                 if ($(id + " sup a").length === 0) {
                     id = '.halferWords';
+                }
+                if ($(id + " sup a").length === 0) {
+                    id = '.fewWords';
                 }
                 if ($(id + " sup a").length > 3) {
                     if (this.options.debug) {
@@ -144,7 +144,7 @@
 
                     $.ajax({
                         type: 'HEAD',
-                        async: false,
+                        async: true,
                         url: url,
                         timeout: 1000,
                         success: function (data, textStatus, jqXHR) {
@@ -237,7 +237,7 @@
                     $tt.renumberByJS('ol', colno, null, 'column');
                 }
                 if (jQuery.fn.wresize) {
-		    let myself=this;
+					let myself=this;
                     let $t = $('.h4_page').wresize({debug: myself.options.debug});
                     $t.wait(function() {
                     myself.columnise();
@@ -245,9 +245,9 @@
                 }
                 this.options.prevCols = colno;
             }
-	    return this;
+			return this;
         };
-	    
+	
         /**
          * burgerMenu
          * display/ hide this
@@ -261,10 +261,10 @@
 			let t=$(id);
 			if( !t.attr('data-state') ) {
 				t.addClass('burgerMenuOpen').attr('data-state', 1);
-				$('#pageMenu i').removeClass('fa-bars').addClass('fa-remove')
+				$('#pageMenu i').removeClass('fa-ob1burger').addClass('fa-cancel')
 			} else {
 				t.removeClass('burgerMenuOpen').attr('data-state', null);
-				$('#pageMenu i').removeClass('fa-remove').addClass('fa-bars')
+				$('#pageMenu i').removeClass('fa-cancel').addClass('fa-ob1burger')
 			}
 		};
 
@@ -285,6 +285,52 @@
 			return this;
 		};
 
+		CorrectionModule.prototype.APPEARANCE_NAME='appearance';
+
+		CorrectionModule.prototype.storeAppearance=function(ft, fs, dir, clr ) {
+			const struct= {ft:ft, fs:fs, dn:dir, cr:clr };
+			const json=JSON.stringify( struct);
+			COOKIE.set(this.APPEARANCE_NAME, json, 365.254);	
+		};
+
+		CorrectionModule.prototype.applyAppearance = function() {
+			const dat=COOKIE.get(this.APPEARANCE_NAME);
+			if(dat) {
+				const dat2=JSON.parse( dat);
+				let CSS="";
+				if( dat2['ft'] && dat2['fs'] ) {
+					CSS	+=" .h4_page p { font-family: "+dat2['ft']+"; font-size: "+dat2['fs']+"; direction:"+dat2['dn']+"; }";
+					CSS	+=" h1, .h1, h2, .h2, h3, .h3, h4, .h4, h5, .h5, h6 { font-family: "+dat2['ft']+"; direction:"+dat2['dn']+"; }";
+					CSS +=" .h4_page li { font-family: "+dat2['ft']+"; font-size: "+dat2['fs']+"; direction:"+dat2['dn']+"; }";
+					CSS +=" .f4_footer { font-family: '"+dat2['ft']+"'; } "; 
+				}
+				const STYLE=document.createElement('style');
+				STYLE.setAttribute('id', "client-set-css");
+				STYLE.innerText=CSS;
+				document.getElementsByTagName('head')[0].append( STYLE);
+			}
+		};
+
+       /**
+         * addFancyButtonArrow
+
+         * @param id ~ HTML element id for the menu
+         * @access public
+         * @return void
+         */ 
+		CorrectionModule.prototype.addFancyButtonArrow = function () {
+		// maybe at some point refactor into addLeftArrow, addRightArrow
+			$('.addArrow').each(function(i, a) {
+		// ugg JS mouse hover, how 1990s, but I have no assosiation (via CSS) between these two elements
+		// the second element I just added
+				$(a).on('mouseenter', function(e) { $(a).parent().find('.buttonWide').addClass('wideAndHover'); });
+				$(a).on('mouseleave', function(e) { $(a).parent().find('.buttonWide').removeClass('wideAndHover'); });
+				$(a).parent().append('<i class="fa fa-play buttonWide " aria-hidden="true"></i>');
+		// this last bit is here to make code else where much simpler 
+				$(a).parent().attr('style', 'text-align:right;');
+			});
+			return this;
+		};
 
         /**
          * alignHeader
@@ -402,7 +448,6 @@
             $('#block' + tt).attr('style', 'display:inline');
 			return this;
         };
-
 
         return new CorrectionModule(el, options);
     };
@@ -566,5 +611,42 @@
         return new Date(year1, month1, _day1, hour1, min1, sec1, 0);
     };
 
-
 }(jQuery));
+
+function bootPageJS() {
+	jQuery(document).foundation();
+	let action=jQuery('body').ob1().columnise().biblioExtract().addOctoCats().addFancyButtonArrow().applyAppearance();
+	let f1=function() {
+		let action=jQuery('body').ob1();
+		action.burgerMenu('.burgerMenu');
+	};
+	jQuery('#pageMenu').on('click touch keypress', f1); 
+
+	let tt=location.pathname.split('/group-');
+	if( Array.isArray( tt) && tt.length>1 && tt[1].length ) {
+		jQuery("html").adjacent({group: tt[1], debug:false});  
+	}
+	
+	let grp=$('div#contentGroup').attr('--data-group');
+	if(grp) {
+		grp=grp.split(',');
+		grp=grp.map( (i, j)=>{ return i.trim(); } );
+		grp.map((i, j ) => { 
+			jQuery("html").adjacent({group: i, debug:false});  
+				});
+	}
+
+	if(jQuery('pre.code').length) {
+		const HIGHLIGHT=() => { 
+			if( jQuery('pre.code').highlight) {
+				jQuery('pre.code').highlight({source:1, zebra:1, indent:'tab', list:'ol'});
+			} else {
+				setTimeout(HIGHLIGHT, 1000 );
+			} 	
+		};
+		setTimeout(HIGHLIGHT , 1000);
+	}
+}
+jQuery(document).ready(bootPageJS);
+
+
