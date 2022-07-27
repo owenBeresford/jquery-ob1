@@ -1,9 +1,11 @@
 'use strict';
-import fetch, { Headers, Request, Response } from 'node-fetch';
+import fetch, { Headers, Request, Response, AbortError } from 'node-fetch';
 import { parse } from 'node-html-parser';
 import decoder from 'html-entity-decoder';
 import fs from 'fs';
+import AbortController from "abort-controller";
 
+const MAX_WAIT=3000;
 if( process.argv.length <4 || process.argv[2]!=='--url') {	
 	console.warn("Pass URL as --url <blah> --out <blah>", process.argv);
 	process.exit(1);
@@ -23,15 +25,27 @@ try {
 	process.exit(1);	
 } 
 
-let resp; let root;
+let resp; let root; let timeout;
 try {
-	resp = await fetch( URL2 );
+	const controller = new AbortController();
+	timeout = setTimeout(() => {
+		controller.abort();
+	}, MAX_WAIT);
+
+	resp = await fetch( URL2, {signal: controller.signal} );
 	let html = await resp.text();
 	root=parse(html );
 } catch(e) {
-	console.warn("Error parsing ", e);	
-	process.exit(1);	
+	if (e instanceof AbortError) {
+		console.warn("network failure ", e);	
+	} else {
+		console.warn("Error parsing ", e);	
+	}
+	process.exit(1);
+} finally {
+	clearTimeout(timeout);
 }
+
 
 let nn=root.querySelectorAll('sup a');
 let list=[];
@@ -56,10 +70,16 @@ for(let i =0; i<list.length; i++) {
 			};
 
 	try {
-		resp = await fetch( list[i] );
-		if( resp.status===301) {
+		const controller = new AbortController();
+		timeout = setTimeout(() => {
+			controller.abort();
+		}, MAX_WAIT);
+
+		resp = await fetch( list[i], {signal: controller.signal} );
+
+		if( resp.status===301 ||resp.status===302 ) {
 			console.log("ERROR: "+URL1+"["+i+"] REDIRECT "+list[i]+" :: "+ resp.headers.location);
-			resp= await fetch( resp.headers.location);
+			resp= await fetch( resp.headers.location, {signal: controller.signal} );
 		}
 		if(!resp || !resp.ok) {
 			console.log("ERROR: "+URL1+"["+i+"] URL was dead "+list[i]+" "+ resp.statusText);
@@ -71,7 +91,7 @@ for(let i =0; i<list.length; i++) {
 		for( let j2 of head.entries() ) {
 			switch(j2[0]) {
 			case 'last-modified':
-				item.date=(new Date( j2[1])).getTime();
+				item.date=(new Date( j2[1])).getTime()/1000;
 				break;
 
 			default:
@@ -85,7 +105,10 @@ for(let i =0; i<list.length; i++) {
 		item.descrip=e.toString();
 		final.push( item);
 		continue;
+	} finally {
+		clearTimeout(timeout);
 	}
+
 
 	let hit=body.match(new RegExp('<meta[ \\t]+name=["\']description["\'][ \\t]+content="([^"]+)"', 'i'));
 	if(hit && hit.length) {

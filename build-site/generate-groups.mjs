@@ -85,6 +85,13 @@ for(let i =0; i<list.length; i++) {
 		item.descrip=list[i];
 	}
 
+	if(item.date===0 || isNaN( item.date) ) {
+		hit= body.match(new RegExp('Last modified <time datetime="([^"]+)"', 'i') );
+		if(hit && hit.length) {
+			item.date=(new Date(hit[1])).getTime()/1000;
+		}
+	}
+
 	hit= body.match(new RegExp('<title>([^<]+)<\\/title>', 'i') );
 	if(hit && hit.length) {
 		item.title= hit[1].trim();
