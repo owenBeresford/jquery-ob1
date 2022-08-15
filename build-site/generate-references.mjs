@@ -31,13 +31,18 @@ try {
 	timeout = setTimeout(() => {
 		controller.abort();
 	}, MAX_WAIT);
+	let p1=new Date();
 
 	resp = await fetch( URL2, {signal: controller.signal} );
 	let html = await resp.text();
 	root=parse(html );
+	let p2=new Date();
+	let p2=new Date();
+
 } catch(e) {
 	if (e instanceof AbortError) {
-		console.warn("network failure ", e);	
+		let p3=p1.getTime()-p2.getTime();
+		console.warn("network failure ", e, p3);	
 	} else {
 		console.warn("Error parsing ", e);	
 	}
