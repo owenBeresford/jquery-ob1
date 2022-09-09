@@ -37,7 +37,6 @@ try {
 	let html = await resp.text();
 	root=parse(html );
 	let p2=new Date();
-	let p2=new Date();
 
 } catch(e) {
 	if (e instanceof AbortError) {
@@ -75,8 +74,11 @@ for(let i =0; i<list.length; i++) {
 			};
 
 	try {
+		let d1=new Date();
 		const controller = new AbortController();
 		timeout = setTimeout(() => {
+			let d2=new Date();
+			console.log("ABORTED pause of "+(d2.getTime()-d1.getTime())+" "+MAX_WAIT );
 			controller.abort();
 		}, MAX_WAIT);
 
@@ -120,6 +122,9 @@ for(let i =0; i<list.length; i++) {
 		item.descrip= hit[1].trim();
 		item.descrip=decoder.feed( item.descrip);
 		item.descrip=item.descrip.replace('"', '').replace('&quot;', '').replace('\'', '');
+		if(item.descrip.length>500) {
+			item.descrip=item.descrip.substr(0, 500);
+		}
 
 	} else {
 		item.descrip=list[i];
