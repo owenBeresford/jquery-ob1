@@ -1,0 +1,17 @@
+
+Script shows that URLs where available to time of publishing or site recompile; which may be after time of authoring.  This makes it easier to see bad external OR internal links; at a larger and aggregated scale.
+Having the output file is part file is part of publishing an article; and the fact I need to do a manual walk on links isn't a bad thing, IMO.  Testing this script is like "is it usable" testing, it needs to be manual.
+
+++++ Observed failures
+* lack of constant time of http requests
+* Not all sites publishing all useful meta data
+* cloudflare having awkward process; and fetch not having a way to forward headers unlike a browser
+* developer typos
+
+++++ Risk analysis & mitigation
+* This code has low cyclometric complexity; its branching is mostly "is data present; then use it".  I review outputs, to see if I am helping my audience; and add more solutions to having missing data
+* I will eventually work out how to idiot proof the cloudflare hosted sites.  These fail a percentage of time, more than other hosting processes.
+* Lack of consistent meta data is both a feature and liability of 'the web'.  Lack of meta data makes the tooltip feature pointless. There are best effort defaults + I'm adding custom parsing for sites that are frequently used.
+* As this software in manually triggered most of the time; I'm picking-up any error from typos. I think this risk is nil for committed code.
+
+ 
