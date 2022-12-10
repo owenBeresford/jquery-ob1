@@ -1,4 +1,5 @@
 'use strict';
+// this script has very low reuse potential; I have just put it in a repo as backup
 import fetch, { Headers, Request, Response, AbortError } from 'node-fetch';
 import { parse } from 'node-html-parser';
 import decoder from 'html-entity-decoder';
@@ -49,6 +50,23 @@ try {
 } finally {
 	clearTimeout(timeout);
 }
+function shorten(url) {
+	let ss=url.lastIndexOf('#');
+	if(ss >0) {
+		return url.substr(0, ss);
+	}
+	return url;
+}
+
+function normaliseString(raw) {
+	raw= raw.trim();
+	raw=decoder.feed( raw);
+	raw=raw.replace('"', '').replace('&quot;', '').replace('\'', '');
+	if(raw.length>500) {
+		raw=raw.substr(0, 500);
+	}
+	return raw;
+}
 
 
 let nn=root.querySelectorAll('sup a');
@@ -62,6 +80,7 @@ if( list.length <3 ) {
 }
 
 let final=[];
+let shorts={ };
 for(let i =0; i<list.length; i++) {
 	console.log("DEBUG: "+ list[i]);
 	let resp; let body;
@@ -75,6 +94,13 @@ for(let i =0; i<list.length; i++) {
 
 	try {
 		let d1=new Date();
+		if( shorts[ shorten(list[i]) ]) {
+			let ttt=Object.assign({}, final[ shorts[ shorten(list[i]) ] ] );
+			ttt.url=item.url;
+			final.push( ttt);
+			continue;
+		}
+
 		const controller = new AbortController();
 		timeout = setTimeout(() => {
 			let d2=new Date();
@@ -116,45 +142,48 @@ for(let i =0; i<list.length; i++) {
 		clearTimeout(timeout);
 	}
 
-
-	let hit=body.match(new RegExp('<meta[ \\t]+name=["\']description["\'][ \\t]+content="([^"]+)"', 'i'));
+	let hit= body.match(new RegExp('<title>([^<]+)<\\/title>', 'i') );
 	if(hit && hit.length) {
-		item.descrip= hit[1].trim();
-		item.descrip=decoder.feed( item.descrip);
-		item.descrip=item.descrip.replace('"', '').replace('&quot;', '').replace('\'', '');
-		if(item.descrip.length>500) {
-			item.descrip=item.descrip.substr(0, 500);
-		}
-
-	} else {
-		item.descrip=list[i];
-	}
-
-	hit= body.match(new RegExp('<title>([^<]+)<\\/title>', 'i') );
-	if(hit && hit.length) {
-		item.title= hit[1].trim();
-		item.title=decoder.feed( item.title );
-		item.title=item.title.replace('"', '').replace('&quot;', '').replace('\'', '');
+		item.title=normaliseString(hit[1]);
 	} else {
 		hit=body.match(new RegExp('<h1[^>]*>([^<]+)</h1>', 'i') );
 		if(hit && hit.length) {
-			item.title= hit[1].trim();
-			item.title=decoder.feed( item.title );
-			item.title=item.title.replace('"', '').replace('&quot;', '').replace('\'', '');
+			item.title=normaliseString(hit[1]);
 		} else {
 			item.title=list[i];
 		}
 	}
 
+	hit= body.match(new RegExp('<meta[ \\t]+name=["\']description["\'][ \\t]+content="([^"]+)"', 'i'));
+	if(hit && hit.length) {
+		item.descrip=normaliseString(hit[1]);
+	} else {
+		item.descrip=item.title;
+	}
+
 	hit=body.match(new RegExp('<meta[ \\t]+name=["\']author["\'][ \\t]+content="([^"]+)"', 'i') );
 	if(hit && hit.length) {
-		item.auth= hit[1].trim();
-		item.auth=decoder.feed( item.auth );
-		item.auth=item.auth.replace('"', '').replace('&quot;', '').replace('\'', '');
+		item.auth=normaliseString(hit[1]);
 	} else {
 		item.auth='unknown';
 	}
+	if(item.url.includes("npmjs")) {
+		let tt=item.url.substr( item.url.lastIndexOf('/')+1 );
+		item.descrip="Package to install "+tt;
+		item.title="Package to install "+tt;
 	
+		hit=body.match(new RegExp('aria-labelledby="collaborators".*<a href="\/~([^"]+)', 'im') );
+		if(hit && hit.length) {
+			item.auth=normaliseString(hit[1]);
+		} else {
+			item.auth='cant extract from NPMjs';
+		}
+	}
+
+	// if cloudflare headers; do magic thing... yet to define magic precisely
+
+	// this is before the add on purpose
+	shorts[ shorten(list[i]) ]=final.length;
 	final.push( item);
 }
 
@@ -169,7 +198,7 @@ let template=`
 |CodeVersion         = 2.0.0
 |Keywords            = XXX
 |description		= Template file for generating JSON responses.
-| mime-type		    = application/json
+|mime-type		    = application/json
 }}
 {{nextresource GET
 |*
