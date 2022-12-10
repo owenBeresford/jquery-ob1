@@ -182,6 +182,29 @@ for(let i =0; i<list.length; i++) {
 
 	// if cloudflare headers; do magic thing... yet to define magic precisely
 
+	if(item.url.includes('medium') && item.auth==="unknown") {
+   		hit=body.match( new RegExp('<h2 class="pw-author-name[^>]*>[ \t\n]*<span[^>]*>([A-Za-z 0-9\']+)<\/span>', 'im') ); 
+		if(hit && hit.length) {
+			item.auth=normaliseString(hit[1]);
+		} else {
+			item.auth='cant extract from medium';
+		}
+
+   		hit=body.match( new RegExp('<p class="pw-published-date[^>]*>[ \t\n]*<span[^>]*>([A-Za-z 0-9,]+)<\/span>', 'im') ); 
+		if(hit && hit.length) {
+			item.date=(new Date(hit[1])).getTime()/1000;
+		} else {
+			item.auth='cant extract from medium';
+		}
+	}
+
+	if(item.url.includes('github') && item.auth==='unknown') {
+	//	https://github.com/node-ffi-napi/node-ffi-napi
+		let tt1=item.url.split('/');
+		item.auth=tt1[3];		
+	}
+
+
 	// this is before the add on purpose
 	shorts[ shorten(list[i]) ]=final.length;
 	final.push( item);
