@@ -68,6 +68,80 @@ function normaliseString(raw) {
 	return raw;
 }
 
+function mod_npmjs(item, body) {
+	let tt=item.url.substr( item.url.lastIndexOf('/')+1 );
+	item.descrip="Package to install "+tt;
+	item.title="Package to install "+tt;
+
+	let hit=body.match(new RegExp('aria-labelledby="collaborators".*<a href="\/~([^"]+)', 'im') );
+	if(hit && hit.length) {
+		item.auth=normaliseString(hit[1]);
+	} else {
+		item.auth='cant extract from NPMjs';
+	}
+	return item;
+}
+
+function mod_medium(item, body) {
+	let hit=body.match( new RegExp('<h2 class="pw-author-name[^>]*>[ \t\n]*<span[^>]*>([A-Za-z 0-9\']+)<\/span>', 'im') ); 
+	if(hit && hit.length) {
+		item.auth=normaliseString(hit[1]);
+	} else {
+		item.auth='cant extract from medium';
+	}
+
+	hit=body.match( new RegExp('<p class="pw-published-date[^>]*>[ \t\n]*<span[^>]*>([A-Za-z 0-9,]+)<\/span>', 'im') ); 
+	if(hit && hit.length) {
+		item.date=(new Date(hit[1])).getTime()/1000;
+	} else {
+		item.auth='cant extract from medium';
+	}
+	return item;
+}
+
+function mod_github(item, body ) {
+	//	https://github.com/node-ffi-napi/node-ffi-napi
+	let tt1=item.url.split('/');
+	item.auth=tt1[3];	
+	return item;	
+}
+
+function mod_stackoverflow(item, body) {
+	item.auth='No author for Q&A sites';
+	return item;	
+} 
+
+function mod_MDN(item, body) {
+	item.auth='MDN contribuitors';
+	return item;	
+} 
+
+function mod_GDN(item, body) {
+	item.auth='Google inc';
+	return item;	
+}
+
+function mod_react(item, body) {
+	item.auth='Meta platforms inc';
+	return item;	
+}
+
+function mod_graphQL(item, body) {
+	item.auth='The GraphQL Foundation';
+	return item;	
+}
+
+function mod_caniuse(item, body) {
+	item.auth='Alexis Deveria @Fyrd';
+	return item;	
+}
+
+function mod_wikipedia(item, body) {
+	item.auth='Wikipedia contributors';
+	return item;	
+}
+
+
 
 let nn=root.querySelectorAll('sup a');
 let list=[];
@@ -81,6 +155,22 @@ if( list.length <3 ) {
 
 let final=[];
 let shorts={ };
+
+const VENDORS=[
+	{'name':'npmjs', 'target':false, 'callback':mod_npmjs },
+	{'name':'medium', 'target':'auth', 'callback':mod_medium },
+	{'name':'github', 'target':'auth', 'callback':mod_github },
+	{'name':'stackoverflow', 'target':'auth', 'callback':mod_stackoverflow },
+	{'name':'wikipedia', 'target':'auth', 'callback':mod_wikipedia },
+	{'name':'developer.mozilla.org', 'target':'auth', 'callback':mod_MDN },
+	{'name':'reactjs.org', 'target':'auth', 'callback':mod_react },
+	{'name':'graphql.org', 'target':'auth', 'callback':mod_graphQL },
+	{'name':'developers.google.com', 'target':'auth', 'callback':mod_GDN },
+	{'name':'caniuse.com', 'target':'auth', 'callback':mod_caniuse },
+
+];
+const VENDORS_LENGTH=VENDORS.length; 
+
 for(let i =0; i<list.length; i++) {
 	console.log("DEBUG: "+ list[i]);
 	let resp; let body;
@@ -167,42 +257,14 @@ for(let i =0; i<list.length; i++) {
 	} else {
 		item.auth='unknown';
 	}
-	if(item.url.includes("npmjs")) {
-		let tt=item.url.substr( item.url.lastIndexOf('/')+1 );
-		item.descrip="Package to install "+tt;
-		item.title="Package to install "+tt;
-	
-		hit=body.match(new RegExp('aria-labelledby="collaborators".*<a href="\/~([^"]+)', 'im') );
-		if(hit && hit.length) {
-			item.auth=normaliseString(hit[1]);
-		} else {
-			item.auth='cant extract from NPMjs';
-		}
-	}
 
 	// if cloudflare headers; do magic thing... yet to define magic precisely
-
-	if(item.url.includes('medium') && item.auth==="unknown") {
-   		hit=body.match( new RegExp('<h2 class="pw-author-name[^>]*>[ \t\n]*<span[^>]*>([A-Za-z 0-9\']+)<\/span>', 'im') ); 
-		if(hit && hit.length) {
-			item.auth=normaliseString(hit[1]);
-		} else {
-			item.auth='cant extract from medium';
+	for(let i=0; i< VENDORS_LENGTH; i++) {
+		if(item.url.includes(VENDORS[i].name) && ((VENDORS[i].target && item[VENDORS[i].target] ==='unknown') ||
+			!VENDORS[i].target)) {
+			VENDORS[i].callback(item, body);		
 		}
-
-   		hit=body.match( new RegExp('<p class="pw-published-date[^>]*>[ \t\n]*<span[^>]*>([A-Za-z 0-9,]+)<\/span>', 'im') ); 
-		if(hit && hit.length) {
-			item.date=(new Date(hit[1])).getTime()/1000;
-		} else {
-			item.auth='cant extract from medium';
-		}
-	}
-
-	if(item.url.includes('github') && item.auth==='unknown') {
-	//	https://github.com/node-ffi-napi/node-ffi-napi
-		let tt1=item.url.split('/');
-		item.auth=tt1[3];		
-	}
+	}	
 
 
 	// this is before the add on purpose
