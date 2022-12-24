@@ -1,55 +1,42 @@
 'use strict';
-// this script has very low reuse potential; I have just put it in a repo as backup
-import fetch, { Headers, Request, Response, AbortError } from 'node-fetch';
+if(parseInt(process.versions.node)===18) {
+	console.error("warning, in Dec2022, node18 libraries don't like node-libcurl. use v16 or something.\n");
+	process.exit(254);
+}
+// using lots of 'function' (not arrows) so code is compiled once.
+// #REF
+
+import { Curl } from 'node-libcurl';
 import { parse } from 'node-html-parser';
 import decoder from 'html-entity-decoder';
 import fs from 'fs';
-import AbortController from "abort-controller";
 
-const MAX_WAIT=3000;
-if( process.argv.length <4 || process.argv[2]!=='--url') {	
-	console.warn("Pass URL as --url <blah> --out <blah>", process.argv);
-	process.exit(1);
-}
-if( process.argv.length < 6 || process.argv[4]!== '--out' ) {
-	console.warn("Pass URL as --url <blah> --out <blah>", process.argv);
-	process.exit(1);	
-}
-
-let URL1=''; let URL2=''; let FN='';
-try {
-	URL1= process.argv[3];
-	FN  = process.argv[5];
-	URL2=new URL( URL1);
-} catch(e) {
-	console.warn("Pass valid URL as --url <blah>", process.argv, e);
-	process.exit(1);	
-} 
-
-let resp; let root; let timeout;
-try {
-	const controller = new AbortController();
-	timeout = setTimeout(() => {
-		controller.abort();
-	}, MAX_WAIT);
-	let p1=new Date();
-
-	resp = await fetch( URL2, {signal: controller.signal} );
-	let html = await resp.text();
-	root=parse(html );
-	let p2=new Date();
-
-} catch(e) {
-	if (e instanceof AbortError) {
-		let p3=p1.getTime()-p2.getTime();
-		console.warn("network failure ", e, p3);	
-	} else {
-		console.warn("Error parsing ", e);	
+const MAX_WAIT=5000;
+function process_args(args) {
+	if( args.length <4 || args[2]!=='--url') {	
+		console.warn("Pass URL as --url <blah> --out <blah>", args);
+		process.exit(1);
 	}
-	process.exit(1);
-} finally {
-	clearTimeout(timeout);
+	if( args.length < 6 || args[4]!== '--out' ) {
+		console.warn("Pass URL as --url <blah> --out <blah>", args);
+		process.exit(1);	
+	}
+
+	let URL1=''; let URL2=''; let FN='';
+	try {
+		URL1= args[3];
+		FN  = args[5];
+		URL2=new URL( URL1);
+
+	} catch(e) {
+		console.warn("Pass valid URL as --url <blah>", args, e);
+		process.exit(1);	
+	} 
+	return [URL2, FN, URL1 ];
 }
+
+const [URL2, FN, URL1]=process_args(process.argv);
+
 function shorten(url) {
 	let ss=url.lastIndexOf('#');
 	if(ss >0) {
@@ -59,6 +46,8 @@ function shorten(url) {
 }
 
 function normaliseString(raw) {
+	if(!raw) { return ""; }
+
 	raw= raw.trim();
 	raw=decoder.feed( raw);
 	raw=raw.replace('"', '').replace('&quot;', '').replace('\'', '');
@@ -67,6 +56,12 @@ function normaliseString(raw) {
 	}
 	return raw;
 }
+
+function valueOfUrl(raw) {
+	console.error("Write code to make an URL more readable 220");
+	return raw;
+}
+
 
 function mod_npmjs(item, body) {
 	let tt=item.url.substr( item.url.lastIndexOf('/')+1 );
@@ -141,21 +136,6 @@ function mod_wikipedia(item, body) {
 	return item;	
 }
 
-
-
-let nn=root.querySelectorAll('sup a');
-let list=[];
-nn.forEach( function(val, i) {
-	list.push( val.getAttribute('href') );
-		} );
-if( list.length <3 ) {	
-	console.warn("Didn't find many/ any URLs in page/ Is this not on my site, or is it not an article?", );
-	process.exit(1);
-}
-
-let final=[];
-let shorts={ };
-
 const VENDORS=[
 	{'name':'npmjs', 'target':false, 'callback':mod_npmjs },
 	{'name':'medium', 'target':'auth', 'callback':mod_medium },
@@ -171,67 +151,132 @@ const VENDORS=[
 ];
 const VENDORS_LENGTH=VENDORS.length; 
 
-for(let i =0; i<list.length; i++) {
-	console.log("DEBUG: "+ list[i]);
-	let resp; let body;
+function wave(url, good1, bad1, offset, curlgood, curlbad) {
+	try {
+		console.log("DEBUG: ["+offset+"] "+url);
+		const curl = new Curl();
+		curl.setOpt('URL', url);
+		curl.setOpt('FOLLOWLOCATION', true);
+		curl.setOpt('HTTPHEADER', [ 'upgrade-insecure-requests: 1', 'cache-control: no-cache', ]);
+		if(url.match('caniuse.com')) {
+			console.log("DEBUG: override for caniuse.com");
+			curl.setOpt('USERAGENT', 'Mozilla/5.0 (compatible; Linux) Curl/1.0');
+//		-e https://caniuse.com/index.php -A 'Mozilla/5.0 (compatible; Linux) Curl/1.0' -m 2 	
+		}
+		if(typeof offset=== 'number') {
+			curl.offset=offset;
+		}
+		curl.good=curlgood;
+		curl.bad=curlbad;
+
+		curl.on('end', good1.bind(curl));
+		curl.on('error', bad1.bind(curl));
+		curl.perform();
+
+	} catch(e) {
+		console.warn("["+offset+"] Network error with "+url +" :: "+ e);	
+		curlbad(e);
+	}
+}
+
+function exec_reference_url(offset, url, next_page, log_and_close) {
+  return new Promise(function (good, bad) {
+	wave( url, next_page, log_and_close, offset, good, bad);
+  });
+}
+
+
+const P1 = new Promise(function(good, bad) {  
+
+function process_first_page(statusCode, data, headers) {
+	if( parseInt(statusCode /100) !==2) {
+		bad( new Error("Recieved "+statusCode));
+	}
+	
+	let root=parse(data );
+	let nn=root.querySelectorAll('sup a');
+	let list=[];
+	nn.forEach( function(val, i) {
+		list.push( val.getAttribute('href') );
+			} );
+  	this.close();
+	if( list.length <5 ) {	
+		console.warn("Didn't find many/ any URLs in page/ Is this not on my site, or is it not an article?", );
+		process.exit(0);
+	}
+	good(list);
+}
+
+function log_and_close() {
+	console.log(arguments[0], arguments[1]);
+	this.close();
+	curlbad("Error");
+}
+
+wave(URL1, process_first_page, log_and_close, "n/a", good, bad);
+
+}).then(function(list) {
+	let final=[];
+	let shorts={};
+
+function log_and_close() {
+	console.log(arguments[0], arguments[1]);
+	this.close();
 	let item={
-				'url':list[i].replace("http://192.168.0.34", "https://owenberesford.me.uk"),
+				'url':list[this.offset].replace("http://192.168.0.34", "https://owenberesford.me.uk"),
+				'descrip':'HTTP error, '+arguments[0],
+				'title':'HTTP error, '+arguments[0],
+				'auth':'unknown',
+				'date':0,
+			};
+	final[this.offset]= item;
+	this.good( item);
+//	this.bad(new Error("Error"));
+}
+
+function next_page(statusCode, body, headers) {
+	let item={
+				'url':list[this.offset].replace("http://192.168.0.34", "https://owenberesford.me.uk"),
 				'descrip':'',
 				'title':'',
 				'auth':'',
 				'date':0,
 			};
-
-	try {
-		let d1=new Date();
-		if( shorts[ shorten(list[i]) ]) {
-			let ttt=Object.assign({}, final[ shorts[ shorten(list[i]) ] ] );
-			ttt.url=item.url;
-			final.push( ttt);
-			continue;
+console.log("DEBUG response ["+this.offset+"] "+statusCode+" output has "+final.length );
+// I set curl follow-header
+	if( parseInt( statusCode /100)!==2) {
+		console.log("ERROR: "+URL1+"["+this.offset+"] URL was dead "+list[this.offset]+" ", headers.result);
+		if(headers.result && headers.result.reason) {
+			item.descrip= headers.result.reason;
+		} else {
+			item.descrip="Recieved code "+statusCode+" code.";
 		}
-
-		const controller = new AbortController();
-		timeout = setTimeout(() => {
-			let d2=new Date();
-			console.log("ABORTED pause of "+(d2.getTime()-d1.getTime())+" "+MAX_WAIT );
-			controller.abort();
-		}, MAX_WAIT);
-
-		resp = await fetch( list[i], {signal: controller.signal} );
-
-		if( resp.status===301 ||resp.status===302 ) {
-			console.log("ERROR: "+URL1+"["+i+"] REDIRECT "+list[i]+" :: "+ resp.headers.location);
-			resp= await fetch( resp.headers.location, {signal: controller.signal} );
-		}
-		if(!resp || !resp.ok) {
-			console.log("ERROR: "+URL1+"["+i+"] URL was dead "+list[i]+" "+ resp.statusText);
-			item.descrip=resp.statusText;
-			final.push( item);
-			continue;
-		}
-		let head = await resp.headers;
-		for( let j2 of head.entries() ) {
-			switch(j2[0]) {
-			case 'last-modified':
-				item.date=(new Date( j2[1])).getTime()/1000;
-				break;
-
-			default:
-			//	console.log("Unhandled header", ...j2 );
+		final[this.offset]= item;
+		this.good( item);
+		return;
+	}
+	if('last-modified' in headers) {
+		item.date=(new Date( headers['last-modified'])).getTime()/1000;
+	} else {
+		let hit= body.match(new RegExp('posted.{1,5}<time datetime="([^"]*)', 'im') );
+		if(hit && hit.length) {
+			item.date=(new Date(hit[1])).getTime()/1000;
+		}  else {
+			let hit= body.match(new RegExp('last updated.*?<time datetime="([^"]*)', 'im') );
+			if(hit && hit.length) {
+				item.date=(new Date(hit[1])).getTime()/1000;
+			} else {
+				let hit= body.match(new RegExp('class="pw-published-date[^>]*><span>([^<]*)</span>', 'im') );
+				if(hit && hit.length) {
+					item.date=(new Date(hit[1])).getTime()/1000;
+				} else {
+					console.log("DEBUG: Need more date code...");
+				}
 			}
 		}
-		body = await resp.text();	
-
-	} catch(e) {
-		console.log("ERROR: "+URL1+"["+i+"] "+item.url+" :: client side failure "+ e);
-		item.descrip=e.toString();
-		final.push( item);
-		continue;
-	} finally {
-		clearTimeout(timeout);
 	}
 
+// https://gist.github.com/lancejpollard/1978404
 	let hit= body.match(new RegExp('<title>([^<]+)<\\/title>', 'i') );
 	if(hit && hit.length) {
 		item.title=normaliseString(hit[1]);
@@ -240,13 +285,20 @@ for(let i =0; i<list.length; i++) {
 		if(hit && hit.length) {
 			item.title=normaliseString(hit[1]);
 		} else {
-			item.title=list[i];
+			hit=body.match(new RegExp('<meta[ \\t]+name=["\']og:title["\'][ \\t]+content="([^"]+)"', 'i'));
+			if(hit && hit.length) {
+				item.title=normaliseString(hit[1]);
+			} else {
+// <meta name="og:title" content="The Rock"/>
+				item.title=valueOfUrl(list[this.offset]);
+			}
 		}
 	}
 
-	hit= body.match(new RegExp('<meta[ \\t]+name=["\']description["\'][ \\t]+content="([^"]+)"', 'i'));
+	hit=body.match(new RegExp('<meta[ \\t]+name=["\']description["\'][ \\t]+content="([^"]+)"', 'i'));
 	if(hit && hit.length) {
 		item.descrip=normaliseString(hit[1]);
+	
 	} else {
 		item.descrip=item.title;
 	}
@@ -255,24 +307,52 @@ for(let i =0; i<list.length; i++) {
 	if(hit && hit.length) {
 		item.auth=normaliseString(hit[1]);
 	} else {
-		item.auth='unknown';
+		hit=body.match(new RegExp('<meta[ \\t]+name=["\']copyright["\'][ \\t]+content="([^"]+)"', 'i') );
+		if(hit && hit.length) {
+			item.auth=normaliseString(hit[1]);
+		} else {
+// <meta name="twitter:creator" content="@channelOwen">
+			hit=body.match(new RegExp('<meta[ \\t]+name=["\']twitter:creator["\'][ \\t]+content="([^"]+)"', 'i') );
+			if(hit && hit.length) {
+				item.auth=normaliseString(hit[1]);
+			} else {
+				hit=body.match(new RegExp('\&copy; [0-9,]* ([^<\n])|[Ⓒ ©] [0-9,]* ([^<\n])', 'i') );
+				if(hit && hit.length) {
+					item.auth=normaliseString(hit[1]);
+				} else {
+					item.auth='unknown';
+				}
+			}
+
+// https://love2dev.com/blog/html-website-copyright/
+// look at cc statement in footer next
+// ©	&copy;	&#169;	&#xA9;	copyright symbol
+// Ⓒ	&#9400;	&#x24B8;	    C inside circle
+//  <footer> <small>&copy; Copyright 2018, Example Corporation</small> </footer> 
+		}
 	}
 
-	// if cloudflare headers; do magic thing... yet to define magic precisely
 	for(let i=0; i< VENDORS_LENGTH; i++) {
 		if(item.url.includes(VENDORS[i].name) && ((VENDORS[i].target && item[VENDORS[i].target] ==='unknown') ||
 			!VENDORS[i].target)) {
 			VENDORS[i].callback(item, body);		
 		}
-	}	
+	}
 
-
-	// this is before the add on purpose
-	shorts[ shorten(list[i]) ]=final.length;
-	final.push( item);
+	shorts[ shorten(list[this.offset]) ]=this.offset;
+	final[this.offset]= item;
+	this.good( item);
 }
+	
+	let stack=[];
+	for(let j =0 ; j< list.length; j++) {
+		stack.push(exec_reference_url(j, list[j], next_page, log_and_close));
+	}
 
-let template=`
+	Promise.all(stack).then(function(data) {
+console.log("DEBUG: end event (write to disk) ");
+
+		let template=`
 {{pagemeta
 |Name                = Should NOT be visible ~ JSON output.
 |Title               = Should NOT be visible ~ JSON output.
@@ -290,10 +370,13 @@ let template=`
 }}
 {{plain root
 `;
-template= template+ JSON.stringify( final)+ "\n}}\n";
+		template= template+ JSON.stringify( data)+ "\n}}\n";
 
-fs.writeFile( process.cwd()+'/'+FN, template, 'utf8', (err)=> { 
-	if(err) { console.warn("Write ERROR "+ process.cwd()+'/'+FN ,err); }
-} );
+		fs.writeFile( process.cwd()+'/'+FN, template, 'utf8', (err)=> { 
+			if(err) { console.warn("Write ERROR "+ process.cwd()+'/'+FN ,err); }
+		} );
+
+	});
+});
 
 
