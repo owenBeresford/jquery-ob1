@@ -6,7 +6,7 @@ if(parseInt(process.versions.node)===18) {
 // using lots of 'function' (not arrows) so code is compiled once.
 // #REF
 
-import { Curl } from 'node-libcurl';
+import {  Curl } from 'node-libcurl';
 import { parse } from 'node-html-parser';
 import decoder from 'html-entity-decoder';
 import fs from 'fs';
@@ -58,7 +58,21 @@ function normaliseString(raw) {
 }
 
 function valueOfUrl(raw) {
-	console.error("Write code to make an URL more readable 220");
+	let sect=raw.split('/'), last=sect[sect.length-1];
+	
+	if(sect.length>4 && last && ! last.match(new RegExp('\\.htm', 'i'))) {
+		return last;
+	}
+	if(sect.length===4 && last && !last.match(new RegExp('\\.htm', 'i'))) { // Two are used for 'https://'
+		return last;
+	}
+	if(sect.length===4 && last==="") {
+		return sect[2];
+	} else if( sect.length>4 && last==="") {
+		return sect[2];
+	}
+
+	console.log("Last gasp, url parsing failed. "+raw);	
 	return raw;
 }
 
@@ -331,11 +345,10 @@ console.log("DEBUG response ["+this.offset+"] "+statusCode+" output has "+final.
 //  <footer> <small>&copy; Copyright 2018, Example Corporation</small> </footer> 
 		}
 	}
-
 	for(let i=0; i< VENDORS_LENGTH; i++) {
 		if(item.url.includes(VENDORS[i].name) && ((VENDORS[i].target && item[VENDORS[i].target] ==='unknown') ||
-			!VENDORS[i].target)) {
-			VENDORS[i].callback(item, body);		
+			!item[VENDORS[i].target])) {
+			item=VENDORS[i].callback(item, body);		
 		}
 	}
 
@@ -378,5 +391,4 @@ console.log("DEBUG: end event (write to disk) ");
 
 	});
 });
-
 

@@ -126,12 +126,11 @@ wave(URL1, process_first_page, log_and_close, "n/a", good, bad);
 				'date':0,
 			};
 		this.close();
-// console.log("sdfsdfsdf ", statusCode, body, headers, new Date());
 		if( parseInt(statusCode/100)!==2 ) {
 			console.warn("["+this.offset+"] URL was dead "+ headers.result.reason );
 			item.descrip=headers.result.reason;
 			final.push( item);
-			this.good(final);
+			this.good(item);
 			return;
 		}
 		if( 'last-modified' in headers && headers['last-modified']) {
@@ -167,7 +166,7 @@ wave(URL1, process_first_page, log_and_close, "n/a", good, bad);
 		}
 
 		final.push( item);
-		this.good(final);
+		this.good(item);
 	}
 	
 	function log_and_close() {
