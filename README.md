@@ -1,3 +1,5 @@
+UPDATE 2022: code frozen
+
 # jquery-ob1
 Plugin for some of my site features. **Very little reusability**  I normally name very specific company behaviour code after the company that owns it, so in this case it needs to be named after me... >.<  This scales better than calling 50% of files 'app.js'
 
